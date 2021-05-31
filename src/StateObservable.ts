@@ -1,10 +1,10 @@
-import * as rx from 'rxjs'
+import { Observable, Subject } from 'rxjs'
 
-export class StateObservable<S> extends rx.Observable<S> {
+export class StateObservable<S> extends Observable<S> {
   value: S;
-  private __notifier = new rx.Subject<S>();
+  private __notifier = new Subject<S>();
 
-  constructor(input$: rx.Observable<S>, initialState: S) {
+  constructor(input$: Observable<S>, initialState: S) {
     super(subscriber => {
       const subscription = this.__notifier.subscribe(subscriber);
       if (subscription && !subscription.closed) {

@@ -1,5 +1,5 @@
-import * as rx from 'rxjs'
-import * as op from 'rxjs/operators'
+import { Subject, Observable, queueScheduler } from 'rxjs'
+import { merge, mergeMap, tap, startWith, scan, observeOn, share } from 'rxjs/operators'
 import { StateObservable } from './StateObservable'
 import { TReducer, TEpic, TConvert, IStore } from './interface'
 
@@ -9,12 +9,12 @@ import { TReducer, TEpic, TConvert, IStore } from './interface'
 export class Store implements IStore {
 
   // 仅接收dispatch的subject
-  private _actionInputSubject$ = new rx.Subject()
+  private _actionInputSubject$ = new Subject()
 
   // 汇集epic和dispatch的subject
-  private _actionOutputSubject$ = new rx.Subject()
+  private _actionOutputSubject$ = new Subject()
 
-  private _reduce$: rx.Observable<any>
+  private _reduce$: Observable<any>
 
   // 通过StateObservable包装的state
   private _stateOutput$: StateObservable<any>
@@ -31,27 +31,27 @@ export class Store implements IStore {
    * 仅输出action流
    * @memberof Store
    */
-  get action$(): rx.Observable<any> {
+  get action$(): Observable<any> {
     return this._actionOutputSubject$
   }
 
   constructor(initState: any, converter: TConvert, epic: TEpic, reducer: TReducer) {
     // 包装一个BehaviourSubject, 区别为不会主动推送当前值，且不更新时不推送
-    const stateInput$ = new rx.Subject()
+    const stateInput$ = new Subject()
     this._stateOutput$ = new StateObservable(stateInput$, initState)
     const epic$ = epic(this.action$, this._stateOutput$, this)
 
     this._reduce$ = this._actionInputSubject$.pipe(
-      op.merge(epic$),
-      op.mergeMap(converter),
+      merge(epic$),
+      mergeMap(converter),
       // action listener only take the action after convert
-      op.tap(a => this._actionOutputSubject$.next(a)),
-      op.startWith(initState),
+      tap(a => this._actionOutputSubject$.next(a)),
+      startWith(initState),
       // core function is action$.startWith(initState).scan(reducer)
-      op.scan(reducer),
-      op.observeOn(rx.queueScheduler),
-      op.tap(state => stateInput$.next(state)),
-      op.share(),
+      scan(reducer),
+      observeOn(queueScheduler),
+      tap(state => stateInput$.next(state)),
+      share(),
     )
   }
 
@@ -59,7 +59,7 @@ export class Store implements IStore {
     this._actionInputSubject$.next(action)
   }
 
-  start(cb?: (action$: rx.Observable<any>, state$: StateObservable<any>) => void) {
+  start(cb?: (action$: Observable<any>, state$: StateObservable<any>) => void) {
     cb && cb(this.action$, this._stateOutput$)
     return this._reduce$.subscribe()
   }
