@@ -1,0 +1,12 @@
+{
+  "name": "rx-store",
+  "version": "0.8.1",
+  "description": "Redux Store implement by rxjs.",
+  "main": "index.js",
+  "repository": "git@github.com:L2Eme/rx-store.git",
+  "author": "L2Eme <yume.site@outlook.com>",
+  "license": "MIT",
+  "peerDependencies": {
+    "rxjs": "6.6.6"
+  }
+}
