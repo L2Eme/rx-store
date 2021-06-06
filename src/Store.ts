@@ -1,4 +1,4 @@
-import { Subject, Observable, queueScheduler } from 'rxjs'
+import { Subject, Observable, queueScheduler, of } from 'rxjs'
 import { merge, mergeMap, tap, startWith, scan, observeOn, share } from 'rxjs/operators'
 import { StateObservable } from './StateObservable'
 import { TReducer, TEpic, TConvert, IStore } from './interface'
@@ -39,7 +39,11 @@ export class Store implements IStore {
     // 包装一个BehaviourSubject, 区别为不会主动推送当前值，且不更新时不推送
     const stateInput$ = new Subject()
     this._stateOutput$ = new StateObservable(stateInput$, initState)
-    const epic$ = epic(this.action$, this._stateOutput$, this)
+    const epic$ = of(0).pipe(
+      // 延迟执行epic方法，在constructor调用之后
+      // 扩展后的store，初始化属性时，会用到该特性
+      mergeMap(() => epic(this.action$, this._stateOutput$, this))
+    )
 
     this._reduce$ = this._actionInputSubject$.pipe(
       merge(epic$),
@@ -64,3 +68,9 @@ export class Store implements IStore {
     return this._reduce$.subscribe()
   }
 }
+
+/*
+ * change log
+ * 
+ * v0.8.2 延迟执行epic方法，在constructor调用之后
+ */
