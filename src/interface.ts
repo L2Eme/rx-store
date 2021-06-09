@@ -2,14 +2,14 @@ import { Observable } from 'rxjs'
 import { StateObservable } from './StateObservable'
 
 export interface IStore {
-  dispatch(action: any): void;
+  dispatch(action: any): any;
 }
 
 // 可以处理不同类型的action，比如thunk类型
 // 把thunk promise变成流
 // 用作输入action的截流，转换，检查
 // from clojure plug module
-export type THandler = (action: any) => void
+export type THandler = (action: any) => any
 export type TPlug<T extends IStore> = (this: T, handler: THandler) => THandler
 
 // 处理副作用，执行逻辑的模块

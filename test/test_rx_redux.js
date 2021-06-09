@@ -6,34 +6,29 @@ const { combineEpics } = require('../src/combineEpics')
 // 测试store的基础应用
 
 // Initial State
-const initState = { name: 'initial' };
-
-// // 转换thunk，或者处理action类型
-// const converter = (action) => {
-//   if (action === 'ping') {
-//     return rx.merge(
-//       rx.of({ type: 'ping' }),
-//       rx.timer(1000).pipe(op.mapTo({type: 'pong'})),
-//     )
-//   }
-//   else {
-//     return rx.of(action)
-//   }
-// }
+const initState = { name: 'initial', pong: 1 };
 
 // 转换thunk，或者处理action类型
-const pingPlug = (handler) =>
-  (action, store) => {
+const pingPlug = function (handler) {
+  return (action) => {
     if (action === 'ping') {
-      handler({ type: 'ping' }, store)
       setTimeout(() => {
-        handler({ type: 'pong' }, store)
+        handler({ type: 'pong', n: this.state$.value['pong'] })
       }, 2000);
+      return handler({ type: 'ping' })
     }
-    else {
-      handler(action, store)
-    }
+    return handler(action)
   }
+}
+
+const thunkPlug = function (handler) {
+  return (action) => {
+    if (typeof action === 'function') {
+      return action(this)
+    }
+    return handler(action)
+  }
+}
 
 function epic1 (action$, state$) {
   return rx.of({
@@ -49,7 +44,10 @@ function epic2 (action$, state$) {
 
 function epic3 (action$, state$, store) {
   return rx.timer(5000).pipe(
-    op.map(v => { store.dispatch('ping'); return { type: 'invoke dispatch' } })
+    op.map(v => {
+      store.dispatch('ping');
+      return { type: 'invoke dispatch' }
+    })
   )
 }
 
@@ -67,13 +65,19 @@ const reducer = (state, action) => {
         name: action.payload
       };
     }
+    case 'pong': {
+      return {
+        ...state,
+        pong: state.pong + 1
+      }
+    }
     default:
       return state;
   }
 }
 
 const store = new Store(
-  initState, [pingPlug], epic, reducer
+  initState, [pingPlug, thunkPlug], epic, reducer
 )
 
 // Example action function
@@ -88,10 +92,22 @@ const changeName = function (payload) {
 // store.action$.subscribe(v => console.log('out  ', v))
 // store.state$.subscribe(v => console.log('out  ', v))
 store.start((action$, state$) => {
-  action$.subscribe(v => console.log('start', v))
-  state$.subscribe(v => console.log('start', v))
+  action$.subscribe(v => console.log('act', v))
+  state$.subscribe(v => console.log('state', v))
 })
 store.dispatch({ type: "after_start" })
 store.dispatch(changeName('action'))
 store.dispatch(changeName('action'))
 store.dispatch('ping')
+
+store.dispatch((s) => {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      s.dispatch('ping')
+      resolve('promise yes')
+    }, 1000);
+  }) 
+})
+.then(ret => {
+  console.log('store.dispatch.then', ret)
+})

@@ -66,7 +66,7 @@ export class Store implements IStore {
   }
 
   dispatch(action: any) {
-    this._handler(action) 
+    return this._handler(action) 
   }
 
   start(cb?: (action$: Observable<any>, state$: StateObservable<any>) => void) {
@@ -80,4 +80,5 @@ export class Store implements IStore {
  * 
  * v0.8.2 延迟执行epic方法，在constructor调用之后
  * v0.9.0 使用plug替换convert组件
+ * v0.9.1 store.dispatch返回handler的结果
  */
