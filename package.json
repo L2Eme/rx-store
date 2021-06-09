@@ -1,6 +1,6 @@
 {
   "name": "@line100/rx-store",
-  "version": "0.8.2",
+  "version": "0.9.0",
   "description": "Redux Store implement by rxjs.",
   "publishConfig": {
     "access": "public"
