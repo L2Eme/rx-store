@@ -8,7 +8,9 @@ export interface IStore {
 // 可以处理不同类型的action，比如thunk类型
 // 把thunk promise变成流
 // 用作输入action的截流，转换，检查
-export type TConvert = (action: any) => Observable<any>
+// from clojure plug module
+export type THandler = (action: any) => void
+export type TPlug<T extends IStore> = (this: T, handler: THandler) => THandler
 
 // 处理副作用，执行逻辑的模块
 // 可以监听事件的产生，监听状态的变化，

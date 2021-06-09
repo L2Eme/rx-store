@@ -1,12 +1,14 @@
 import { Subject, Observable, queueScheduler, of } from 'rxjs'
 import { merge, mergeMap, tap, startWith, scan, observeOn, share } from 'rxjs/operators'
 import { StateObservable } from './StateObservable'
-import { TReducer, TEpic, TConvert, IStore } from './interface'
+import { TReducer, TEpic, IStore, THandler, TPlug } from './interface'
 
 /**
  * 外界监听state和action，通过epic，通过start回掉，通过主动subscribe
  */
 export class Store implements IStore {
+
+  private _handler: THandler
 
   // 仅接收dispatch的subject
   private _actionInputSubject$ = new Subject()
@@ -35,7 +37,12 @@ export class Store implements IStore {
     return this._actionOutputSubject$
   }
 
-  constructor(initState: any, converter: TConvert, epic: TEpic, reducer: TReducer) {
+  constructor(initState: any, plugs: TPlug<any>[], epic: TEpic, reducer: TReducer) {
+    // combine plugs
+    this._handler = plugs.reduce(
+      (h, p) => p.bind(this)(h as any),
+      (action: any) => this._actionInputSubject$.next(action)
+    )
     // 包装一个BehaviourSubject, 区别为不会主动推送当前值，且不更新时不推送
     const stateInput$ = new Subject()
     this._stateOutput$ = new StateObservable(stateInput$, initState)
@@ -47,7 +54,6 @@ export class Store implements IStore {
 
     this._reduce$ = this._actionInputSubject$.pipe(
       merge(epic$),
-      mergeMap(converter),
       // action listener only take the action after convert
       tap(a => this._actionOutputSubject$.next(a)),
       startWith(initState),
@@ -60,7 +66,7 @@ export class Store implements IStore {
   }
 
   dispatch(action: any) {
-    this._actionInputSubject$.next(action)
+    this._handler(action) 
   }
 
   start(cb?: (action$: Observable<any>, state$: StateObservable<any>) => void) {
@@ -73,4 +79,5 @@ export class Store implements IStore {
  * change log
  * 
  * v0.8.2 延迟执行epic方法，在constructor调用之后
+ * v0.9.0 使用plug替换convert组件
  */

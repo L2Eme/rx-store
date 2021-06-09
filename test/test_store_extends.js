@@ -12,10 +12,12 @@ class BotStore extends Store {
 // Initial State
 const initState = { name: 'initial' };
 
-// 转换thunk，或者处理action类型
-const converter = (action) => {
-  return rx.of(action)
-}
+const logStorePlug = function(handler) {
+  return (action) => {
+    console.log('log store', this.symbol, this.market)
+    handler(action)
+  }
+} 
 
 function epic (action$, state$, store) {
   console.log('when epic run', store.symbol, store.market)
@@ -30,7 +32,7 @@ const reducer = (state, action) => {
 }
 
 const store = new BotStore(
-  initState, converter, epic, reducer
+  initState, [logStorePlug], epic, reducer
 )
 
 // store.action$.subscribe(v => console.log('out  ', v))
@@ -39,3 +41,5 @@ store.start((action$, state$) => {
   action$.subscribe(v => console.log('start', v))
   state$.subscribe(v => console.log('start', v))
 })
+
+store.dispatch('empty action')

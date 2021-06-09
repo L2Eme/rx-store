@@ -8,18 +8,32 @@ const { combineEpics } = require('../src/combineEpics')
 // Initial State
 const initState = { name: 'initial' };
 
+// // 转换thunk，或者处理action类型
+// const converter = (action) => {
+//   if (action === 'ping') {
+//     return rx.merge(
+//       rx.of({ type: 'ping' }),
+//       rx.timer(1000).pipe(op.mapTo({type: 'pong'})),
+//     )
+//   }
+//   else {
+//     return rx.of(action)
+//   }
+// }
+
 // 转换thunk，或者处理action类型
-const converter = (action) => {
-  if (action === 'ping') {
-    return rx.merge(
-      rx.of({ type: 'ping' }),
-      rx.timer(1000).pipe(op.mapTo({type: 'pong'})),
-    )
+const pingPlug = (handler) =>
+  (action, store) => {
+    if (action === 'ping') {
+      handler({ type: 'ping' }, store)
+      setTimeout(() => {
+        handler({ type: 'pong' }, store)
+      }, 2000);
+    }
+    else {
+      handler(action, store)
+    }
   }
-  else {
-    return rx.of(action)
-  }
-}
 
 function epic1 (action$, state$) {
   return rx.of({
@@ -59,7 +73,7 @@ const reducer = (state, action) => {
 }
 
 const store = new Store(
-  initState, converter, epic, reducer
+  initState, [pingPlug], epic, reducer
 )
 
 // Example action function

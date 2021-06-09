@@ -8,10 +8,6 @@ const { combineEpics } = require('../src/combineEpics')
 // Initial State
 const initState = { data: 'empty' };
 
-const converter = (action) => {
-  return rx.of(action)
-}
-
 function handleRequest({method, params, id}, state$) {
   if (method === 'set') {
     return rx.of(
@@ -49,7 +45,7 @@ const reducer = (state, action) => {
 }
 
 const store = new Store(
-  initState, converter, epic, reducer
+  initState, [], epic, reducer
 )
 
 store.action$.pipe(
